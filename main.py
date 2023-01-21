@@ -1,9 +1,12 @@
+import hashlib
+
 import pyshark
 import pandas as pd
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import SelectKBest, chi2, RFE
+from sklearn.preprocessing import LabelEncoder
 from tqdm import tqdm
 import utils
 from rich.console import Console
@@ -30,27 +33,27 @@ if __name__ == '__main__':
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
     # Create and train the model
-    #clf = RandomForestClassifier()
+    # clf = RandomForestClassifier()
     clf = xgb.XGBClassifier(n_estimators=100)
 
     console.log("# Create and train the model with selected features...")
-    clf.fit(X_train, y_train, verbose=True)
+    clf.fit(X_train, y_train)
 
     console.log("# Start capturing packets....")
-    capture = pyshark.LiveCapture(interface='en0')
+    capture = pyshark.LiveCapture(interface='lo0')
     capture.sniff(timeout=50)
 
     for packet in capture:
         if packet.transport_layer == 'TCP':
             if packet.highest_layer != 'TCP':
-                print("Protocol: {}".format(packet.highest_layer))
-            print("Source IP: {}".format(packet.ip.src))
-            print("Source Port: {}".format(packet.tcp.srcport))
-            print("Destination IP: {}".format(packet.ip.dst))
-            print("Destination Port: {}".format(packet.tcp.dstport))
+                console.print("Protocol: {}".format(packet.highest_layer))
+                console.print("Source IP: {}".format(packet.ip.src))
+                console.print("Source Port: {}".format(packet.tcp.srcport))
+                console.print("Destination IP: {}".format(packet.ip.dst))
+                console.print("Destination Port: {}".format(packet.tcp.dstport))
 
             # Extract features of the packet
-            packet_features = [packet.ip.src, packet.tcp.srcport, packet.ip.dst, packet.tcp.dstport]
+            packet_features = [float(int(hashlib.sha1(packet.tcp.srcport.encode()).hexdigest(), 16)), float(int(hashlib.sha1(packet.ip.dst.encode()).hexdigest(), 16)), float(int(hashlib.sha1(packet.tcp.dstport.encode()).hexdigest(), 16))]
             console.log("# Predict the probability of vulnerability")
             proba = clf.predict_proba([packet_features])
             print("Probability of vulnerability:", proba)
