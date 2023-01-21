@@ -1,5 +1,6 @@
 import pyshark
 import pandas as pd
+import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import SelectKBest, chi2, RFE
@@ -14,8 +15,8 @@ if __name__ == '__main__':
     console.print("Using model: UNSW-NB15")
 
     # Load dataset
-    with console.status("# Reading csv..."):
-        data = pd.read_csv("trening_data/UNSW_NB15_training-set.csv", dtype=utils.generate_dtype())
+    console.print("# Reading csv...")
+    data = pd.read_csv("trening_data/UNSW_NB15_training-set.csv", dtype=utils.generate_dtype())
 
     console.print("# Data preprocessing...")
     data = data.dropna()  # remove missing values
@@ -29,10 +30,11 @@ if __name__ == '__main__':
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
     # Create and train the model
-    clf = RandomForestClassifier()
-    selector = RFE(clf, n_features_to_select=10)
+    #clf = RandomForestClassifier()
+    clf = xgb.XGBClassifier(n_estimators=100)
 
-    # Fit the selector to the data
+    console.print("# Train and fit the selector to the data...")
+    selector = RFE(clf, n_features_to_select=10)
     for _ in tqdm(range(len(X_train))):
         clf.fit(X_train, y_train)
 
