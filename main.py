@@ -35,15 +35,13 @@ if __name__ == '__main__':
 
     console.print("# Train and fit the selector to the data...")
     selector = RFE(clf, n_features_to_select=10)
-    for _ in tqdm(range(len(X_train))):
-        clf.fit(X_train, y_train)
+    clf.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=True)
 
     # Get the selected features
     X_new = selector.transform(X_train)
 
     console.log("# Create and train the model with selected features...")
-    for _ in tqdm(range(len(X_new))):
-        clf.fit(X_new, y_train)
+    clf.fit(X_new, y_train, eval_set=[(X_test, y_test)], verbose=True)
 
     console.log("# Start capturing packets....")
     capture = pyshark.LiveCapture(interface='en0')
